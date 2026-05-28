@@ -84,6 +84,8 @@ export const GetBookResponse = zod.object({
   "author": zod.string().nullable(),
   "description": zod.string().nullish(),
   "coverColor": zod.string().nullish(),
+  "chapterCount": zod.number(),
+  "pageCount": zod.number(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "chapters": zod.array(zod.object({
@@ -94,7 +96,17 @@ export const GetBookResponse = zod.object({
   "content": zod.string(),
   "sortOrder": zod.number(),
   "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "pages": zod.array(zod.object({
+  "id": zod.number(),
+  "bookId": zod.number(),
+  "chapterId": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})).optional()
 }))
 })
 
@@ -152,7 +164,17 @@ export const ListChaptersResponseItem = zod.object({
   "content": zod.string(),
   "sortOrder": zod.number(),
   "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "pages": zod.array(zod.object({
+  "id": zod.number(),
+  "bookId": zod.number(),
+  "chapterId": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})).optional()
 })
 export const ListChaptersResponse = zod.array(ListChaptersResponseItem)
 
@@ -194,7 +216,17 @@ export const ReorderChaptersResponseItem = zod.object({
   "content": zod.string(),
   "sortOrder": zod.number(),
   "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "pages": zod.array(zod.object({
+  "id": zod.number(),
+  "bookId": zod.number(),
+  "chapterId": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})).optional()
 })
 export const ReorderChaptersResponse = zod.array(ReorderChaptersResponseItem)
 
@@ -225,7 +257,17 @@ export const UpdateChapterResponse = zod.object({
   "content": zod.string(),
   "sortOrder": zod.number(),
   "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "pages": zod.array(zod.object({
+  "id": zod.number(),
+  "bookId": zod.number(),
+  "chapterId": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})).optional()
 })
 
 
@@ -354,6 +396,8 @@ export const AppendTextToBookResponse = zod.object({
   "author": zod.string().nullable(),
   "description": zod.string().nullish(),
   "coverColor": zod.string().nullish(),
+  "chapterCount": zod.number(),
+  "pageCount": zod.number(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "chapters": zod.array(zod.object({
@@ -364,7 +408,17 @@ export const AppendTextToBookResponse = zod.object({
   "content": zod.string(),
   "sortOrder": zod.number(),
   "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "pages": zod.array(zod.object({
+  "id": zod.number(),
+  "bookId": zod.number(),
+  "chapterId": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})).optional()
 }))
 })
 

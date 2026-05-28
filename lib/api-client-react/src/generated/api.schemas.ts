@@ -37,6 +37,17 @@ export const ChapterType = {
   section: 'section',
 } as const;
 
+export interface Page {
+  id: number;
+  bookId: number;
+  chapterId: number;
+  title: string;
+  content: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Chapter {
   id: number;
   bookId: number;
@@ -46,6 +57,7 @@ export interface Chapter {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  pages?: Page[];
 }
 
 export interface BookDetail {
@@ -57,6 +69,8 @@ export interface BookDetail {
   description?: string | null;
   /** @nullable */
   coverColor?: string | null;
+  chapterCount: number;
+  pageCount: number;
   createdAt: string;
   updatedAt: string;
   chapters: Chapter[];
@@ -114,17 +128,6 @@ export interface ChapterUpdate {
 
 export interface ChapterReorder {
   orderedIds: number[];
-}
-
-export interface Page {
-  id: number;
-  bookId: number;
-  chapterId: number;
-  title: string;
-  content: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface PageInput {

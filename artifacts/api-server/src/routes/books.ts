@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, asc } from "drizzle-orm";
 import { db, booksTable, chaptersTable, pagesTable } from "@workspace/db";
 import {
   CreateBookBody,
@@ -30,20 +30,30 @@ async function buildBookWithCounts(bookId: number) {
     .then((r) => r[0]);
   if (!book) return null;
 
-  const [chapters, pageCount] = await Promise.all([
+  const [chapters, allPages, pageCount] = await Promise.all([
     db
       .select()
       .from(chaptersTable)
       .where(eq(chaptersTable.bookId, bookId))
-      .orderBy(chaptersTable.sortOrder),
+      .orderBy(asc(chaptersTable.sortOrder)),
+    db
+      .select()
+      .from(pagesTable)
+      .where(eq(pagesTable.bookId, bookId))
+      .orderBy(asc(pagesTable.chapterId), asc(pagesTable.sortOrder)),
     getPageCount(bookId),
   ]);
+
+  const chaptersWithPages = chapters.map((ch) => ({
+    ...ch,
+    pages: allPages.filter((p) => p.chapterId === ch.id),
+  }));
 
   return {
     ...book,
     chapterCount: chapters.length,
     pageCount,
-    chapters,
+    chapters: chaptersWithPages,
   };
 }
 

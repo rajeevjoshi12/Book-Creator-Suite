@@ -661,7 +661,7 @@ components:
 
     BookDetail:
       type: object
-      required: [id, title, author, createdAt, updatedAt, chapters]
+      required: [id, title, author, createdAt, updatedAt, chapters, chapterCount, pageCount]
       properties:
         id:
           type: integer
@@ -673,6 +673,10 @@ components:
           type: ["string", "null"]
         coverColor:
           type: ["string", "null"]
+        chapterCount:
+          type: integer
+        pageCount:
+          type: integer
         createdAt:
           type: string
           format: date-time
@@ -734,6 +738,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Page"
 
     ChapterInput:
       type: object

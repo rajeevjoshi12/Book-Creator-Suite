@@ -4,6 +4,7 @@ import {
   useGetBook,
   getGetBookQueryKey,
 } from "@workspace/api-client-react";
+import { plainTextToHtml } from "@/lib/html-utils";
 import { Button } from "@/components/ui/button";
 import { ExportModal } from "@/components/export-modal";
 import { ArrowLeft, Download, Edit3, BookOpen, Loader2, Menu, X } from "lucide-react";
@@ -138,7 +139,7 @@ export default function ReaderPage() {
                 <span>{chapters.length} {chapters.length === 1 ? "chapter" : "chapters"}</span>
                 <span>&middot;</span>
                 <span>
-                  {Math.max(1, Math.ceil(chapters.reduce((acc, c) => acc + c.content.length, 0) / 1800))} pages
+                  {book.pageCount ?? 0} pages
                 </span>
               </div>
             </div>
@@ -179,16 +180,23 @@ export default function ReaderPage() {
                         )}
                         {ch.title}
                       </Tag>
-                      <div className="prose prose-gray max-w-none">
-                        {ch.content.split("\n").filter((l) => l.trim()).map((para, pi) => (
-                          <p
-                            key={pi}
-                            className="text-foreground leading-8 mb-5 font-serif text-[1.05rem]"
-                          >
-                            {para}
-                          </p>
-                        ))}
-                        {!ch.content.trim() && (
+                      <div className="prose prose-gray max-w-none font-serif text-[1.05rem] leading-8 text-foreground">
+                        {ch.content.trim() ? (
+                          <div
+                            className="[&>p]:mb-5 [&>p]:leading-8 [&>h1]:font-serif [&>h2]:font-serif [&>ul]:list-disc [&>ul]:pl-6 [&>ol]:list-decimal [&>ol]:pl-6 [&>blockquote]:border-l-4 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-muted-foreground"
+                            dangerouslySetInnerHTML={{ __html: plainTextToHtml(ch.content) }}
+                          />
+                        ) : null}
+                        {ch.pages && ch.pages.map((pg) =>
+                          pg.content.trim() ? (
+                            <div
+                              key={pg.id}
+                              className="mt-4 [&>p]:mb-5 [&>p]:leading-8 [&>ul]:list-disc [&>ul]:pl-6 [&>ol]:list-decimal [&>ol]:pl-6 [&>blockquote]:border-l-4 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-muted-foreground"
+                              dangerouslySetInnerHTML={{ __html: plainTextToHtml(pg.content) }}
+                            />
+                          ) : null
+                        )}
+                        {!ch.content.trim() && (!ch.pages || ch.pages.every((p) => !p.content.trim())) && (
                           <p className="text-muted-foreground italic text-sm">
                             Chapter content is empty. Open the editor to add content.
                           </p>

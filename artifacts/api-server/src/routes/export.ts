@@ -1,8 +1,30 @@
 import { Router, type IRouter } from "express";
 import { eq, asc } from "drizzle-orm";
-import { db, booksTable, chaptersTable } from "@workspace/db";
+import { db, booksTable, chaptersTable, pagesTable } from "@workspace/db";
 
 const router: IRouter = Router();
+
+function htmlToPlainTextLines(content: string): string[] {
+  if (!content || !content.trim()) return [];
+  if (content.trimStart().startsWith("<")) {
+    return content
+      .replace(/<\/?(p|div|h[1-6]|li|blockquote|br|tr)[^>]*>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ")
+      .split("\n").map((l) => l.trim()).filter(Boolean);
+  }
+  return content.split("\n").map((l) => l.trim()).filter(Boolean);
+}
+
+function contentToHtml(content: string): string {
+  if (!content || !content.trim()) return "";
+  if (content.trimStart().startsWith("<")) return content;
+  return content
+    .split("\n").filter((l) => l.trim())
+    .map((l) => `<p style="margin:0 0 0.8em 0;line-height:1.8;">${l.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
+    .join("\n");
+}
 
 async function getBookWithChapters(bookId: number) {
   const book = await db
@@ -13,16 +35,20 @@ async function getBookWithChapters(bookId: number) {
 
   if (!book) return null;
 
-  const chapters = await db
-    .select()
-    .from(chaptersTable)
-    .where(eq(chaptersTable.bookId, bookId))
-    .orderBy(asc(chaptersTable.sortOrder));
+  const [chapters, allPages] = await Promise.all([
+    db.select().from(chaptersTable).where(eq(chaptersTable.bookId, bookId)).orderBy(asc(chaptersTable.sortOrder)),
+    db.select().from(pagesTable).where(eq(pagesTable.bookId, bookId)).orderBy(asc(pagesTable.chapterId), asc(pagesTable.sortOrder)),
+  ]);
 
-  return { ...book, chapters };
+  const chaptersWithPages = chapters.map((ch) => ({
+    ...ch,
+    pages: allPages.filter((p) => p.chapterId === ch.id),
+  }));
+
+  return { ...book, chapters: chaptersWithPages };
 }
 
-function buildHtmlBook(book: { title: string; author: string | null; description: string | null }, chapters: { title: string; type: string; content: string }[]): string {
+function buildHtmlBook(book: { title: string; author: string | null; description: string | null }, chapters: { title: string; type: string; content: string; pages: { title: string; content: string; sortOrder: number }[] }[]): string {
   const toc = chapters
     .map((ch, i) => {
       const level = ch.type === "chapter" ? 1 : ch.type === "subchapter" ? 2 : 3;
@@ -34,14 +60,15 @@ function buildHtmlBook(book: { title: string; author: string | null; description
   const chaptersHtml = chapters
     .map((ch, i) => {
       const tag = ch.type === "chapter" ? "h2" : ch.type === "subchapter" ? "h3" : "h4";
-      const content = ch.content
-        .split("\n")
-        .map((line) => `<p style="margin:0 0 0.8em 0;line-height:1.8;">${line}</p>`)
-        .filter((p) => p !== '<p style="margin:0 0 0.8em 0;line-height:1.8;"></p>')
-        .join("\n");
+      const chapterContent = contentToHtml(ch.content);
+      const pagesHtml = ch.pages.map((pg) => {
+        const pgHtml = contentToHtml(pg.content);
+        return pgHtml ? `<div style="margin-top:1.5em;">${pgHtml}</div>` : "";
+      }).join("\n");
       return `<div id="ch-${i}" style="page-break-before:${i > 0 ? "always" : "auto"};padding-top:2em;">
         <${tag} style="font-family:Georgia,serif;color:#1a202c;margin:0 0 1em 0;">${ch.title}</${tag}>
-        ${content}
+        ${chapterContent}
+        ${pagesHtml}
       </div>`;
     })
     .join("\n");
@@ -142,13 +169,21 @@ router.get("/export/:bookId/pdf", async (req, res): Promise<void> => {
         doc.font("Times-Bold").fontSize(headingSize).fillColor("#1a202c").text(ch.title, { width: pageWidth });
         doc.moveDown(1.2);
 
-        const paragraphs = ch.content.split("\n").filter((p) => p.trim());
+        const paragraphs = htmlToPlainTextLines(ch.content);
         paragraphs.forEach((para) => {
           doc.font("Times-Roman").fontSize(12).fillColor("#2d3748")
             .text(para, { width: pageWidth, lineGap: 4, paragraphGap: 8 });
         });
 
-        if (!ch.content.trim()) {
+        ch.pages.forEach((pg) => {
+          const pgParas = htmlToPlainTextLines(pg.content);
+          pgParas.forEach((para) => {
+            doc.font("Times-Roman").fontSize(12).fillColor("#2d3748")
+              .text(para, { width: pageWidth, lineGap: 4, paragraphGap: 8 });
+          });
+        });
+
+        if (!ch.content.trim() && ch.pages.every((p) => !p.content.trim())) {
           doc.font("Times-Italic").fontSize(12).fillColor("#999999").text("(No content)");
         }
       });
@@ -224,7 +259,7 @@ router.get("/export/:bookId/docx", async (req, res): Promise<void> => {
 
       children.push(new Paragraph({ text: ch.title, heading }));
 
-      const paragraphs = ch.content.split("\n").filter((l) => l.trim());
+      const paragraphs = htmlToPlainTextLines(ch.content);
       for (const para of paragraphs) {
         children.push(
           new Paragraph({
@@ -232,6 +267,18 @@ router.get("/export/:bookId/docx", async (req, res): Promise<void> => {
             spacing: { after: 200 },
           }),
         );
+      }
+
+      for (const pg of ch.pages) {
+        const pgParas = htmlToPlainTextLines(pg.content);
+        for (const para of pgParas) {
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: para, size: 24 })],
+              spacing: { after: 200 },
+            }),
+          );
+        }
       }
     }
 
@@ -254,14 +301,14 @@ router.get("/export/:bookId/docx", async (req, res): Promise<void> => {
 async function generateEpubBuffer(book: Awaited<ReturnType<typeof getBookWithChapters>> & {}): Promise<Buffer> {
   const Epub = (await import("epub-gen")).default;
 
-  const epubChapters = book.chapters.map((ch) => ({
-    title: ch.title,
-    data: ch.content
-      .split("\n")
-      .filter((l) => l.trim())
-      .map((l) => `<p>${l}</p>`)
-      .join(""),
-  }));
+  const epubChapters = book.chapters.map((ch) => {
+    const chHtml = contentToHtml(ch.content);
+    const pagesHtml = ch.pages.map((pg) => contentToHtml(pg.content)).filter(Boolean).join("\n");
+    return {
+      title: ch.title,
+      data: (chHtml + "\n" + pagesHtml).trim() || "<p>(No content)</p>",
+    };
+  });
 
   const options = {
     title: book.title,
@@ -323,7 +370,11 @@ router.get("/export/:bookId/mobi", async (req, res): Promise<void> => {
     const mobiBuffer = generateMobi({
       title: book.title,
       author: book.author ?? "Unknown Author",
-      chapters: book.chapters.map((ch) => ({ title: ch.title, content: ch.content })),
+      chapters: book.chapters.map((ch) => {
+        const chHtml = contentToHtml(ch.content);
+        const pagesHtml = ch.pages.map((pg) => contentToHtml(pg.content)).filter(Boolean).join("\n");
+        return { title: ch.title, content: (chHtml + "\n" + pagesHtml).trim() };
+      }),
     });
 
     const safeTitle = book.title.replace(/[^a-z0-9]/gi, "_");

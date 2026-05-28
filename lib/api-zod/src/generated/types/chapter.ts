@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ChapterType } from './chapterType';
+import type { Page } from './page';
 
 export interface Chapter {
   id: number;
@@ -16,4 +17,5 @@ export interface Chapter {
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
+  pages?: Page[];
 }

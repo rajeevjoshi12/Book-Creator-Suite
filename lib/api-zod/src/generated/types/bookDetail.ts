@@ -16,6 +16,8 @@ export interface BookDetail {
   description?: string | null;
   /** @nullable */
   coverColor?: string | null;
+  chapterCount: number;
+  pageCount: number;
   createdAt: Date;
   updatedAt: Date;
   chapters: Chapter[];
