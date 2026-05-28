@@ -239,6 +239,104 @@ export const DeleteChapterParams = zod.object({
 
 
 /**
+ * @summary List pages within a chapter
+ */
+export const ListPagesParams = zod.object({
+  "bookId": zod.coerce.number(),
+  "chapterId": zod.coerce.number()
+})
+
+export const ListPagesResponseItem = zod.object({
+  "id": zod.number(),
+  "bookId": zod.number(),
+  "chapterId": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListPagesResponse = zod.array(ListPagesResponseItem)
+
+
+/**
+ * @summary Create a new page within a chapter
+ */
+export const CreatePageParams = zod.object({
+  "bookId": zod.coerce.number(),
+  "chapterId": zod.coerce.number()
+})
+
+export const CreatePageBody = zod.object({
+  "title": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Reorder pages within a chapter
+ */
+export const ReorderPagesParams = zod.object({
+  "bookId": zod.coerce.number(),
+  "chapterId": zod.coerce.number()
+})
+
+export const ReorderPagesBody = zod.object({
+  "orderedIds": zod.array(zod.number())
+})
+
+export const ReorderPagesResponseItem = zod.object({
+  "id": zod.number(),
+  "bookId": zod.number(),
+  "chapterId": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ReorderPagesResponse = zod.array(ReorderPagesResponseItem)
+
+
+/**
+ * @summary Update a page
+ */
+export const UpdatePageParams = zod.object({
+  "bookId": zod.coerce.number(),
+  "chapterId": zod.coerce.number(),
+  "pageId": zod.coerce.number()
+})
+
+export const UpdatePageBody = zod.object({
+  "title": zod.string().optional(),
+  "content": zod.string().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const UpdatePageResponse = zod.object({
+  "id": zod.number(),
+  "bookId": zod.number(),
+  "chapterId": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "sortOrder": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a page
+ */
+export const DeletePageParams = zod.object({
+  "bookId": zod.coerce.number(),
+  "chapterId": zod.coerce.number(),
+  "pageId": zod.coerce.number()
+})
+
+
+/**
  * @summary Append pasted text as a new chapter to an existing book
  */
 export const AppendTextToBookParams = zod.object({

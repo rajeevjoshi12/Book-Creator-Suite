@@ -51,6 +51,7 @@ export const pagesTable = pgTable("pages", {
   chapterId: integer("chapter_id")
     .notNull()
     .references(() => chaptersTable.id, { onDelete: "cascade" }),
+  title: text("title").notNull().default(""),
   content: text("content").notNull().default(""),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),

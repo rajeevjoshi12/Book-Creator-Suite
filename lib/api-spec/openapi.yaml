@@ -14,6 +14,8 @@ tags:
     description: Book operations
   - name: chapters
     description: Chapter operations
+  - name: pages
+    description: Page operations
   - name: export
     description: Export operations
   - name: upload
@@ -252,6 +254,150 @@ paths:
           schema:
             type: integer
         - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /books/{bookId}/chapters/{chapterId}/pages:
+    get:
+      operationId: listPages
+      tags: [pages]
+      summary: List pages within a chapter
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Page"
+    post:
+      operationId: createPage
+      tags: [pages]
+      summary: Create a new page within a chapter
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageInput"
+      responses:
+        "201":
+          description: Page created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+
+  /books/{bookId}/chapters/{chapterId}/pages/reorder:
+    patch:
+      operationId: reorderPages
+      tags: [pages]
+      summary: Reorder pages within a chapter
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageReorder"
+      responses:
+        "200":
+          description: Pages reordered
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Page"
+
+  /books/{bookId}/chapters/{chapterId}/pages/{pageId}:
+    patch:
+      operationId: updatePage
+      tags: [pages]
+      summary: Update a page
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: pageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageUpdate"
+      responses:
+        "200":
+          description: Page updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    delete:
+      operationId: deletePage
+      tags: [pages]
+      summary: Delete a page
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: pageId
           in: path
           required: true
           schema:
@@ -620,6 +766,59 @@ components:
           type: integer
 
     ChapterReorder:
+      type: object
+      required: [orderedIds]
+      properties:
+        orderedIds:
+          type: array
+          items:
+            type: integer
+
+    Page:
+      type: object
+      required: [id, bookId, chapterId, title, content, sortOrder, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        bookId:
+          type: integer
+        chapterId:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PageInput:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        sortOrder:
+          type: integer
+
+    PageUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        sortOrder:
+          type: integer
+
+    PageReorder:
       type: object
       required: [orderedIds]
       properties:

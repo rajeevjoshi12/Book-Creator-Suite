@@ -32,6 +32,10 @@ import type {
   ErrorResponse,
   HealthStatus,
   LibraryStats,
+  Page,
+  PageInput,
+  PageReorder,
+  PageUpdate,
   ParseDocxBody,
   ParsePdfBody,
   ParseResult,
@@ -939,6 +943,386 @@ export const useDeleteChapter = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteChapterMutationOptions(options));
+    }
+
+export const getListPagesUrl = (bookId: number,
+    chapterId: number,) => {
+
+
+
+
+  return `/api/books/${bookId}/chapters/${chapterId}/pages`
+}
+
+/**
+ * @summary List pages within a chapter
+ */
+export const listPages = async (bookId: number,
+    chapterId: number, options?: RequestInit): Promise<Page[]> => {
+
+  return customFetch<Page[]>(getListPagesUrl(bookId,chapterId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPagesQueryKey = (bookId: number,
+    chapterId: number,) => {
+    return [
+    `/api/books/${bookId}/chapters/${chapterId}/pages`
+    ] as const;
+    }
+
+
+export const getListPagesQueryOptions = <TData = Awaited<ReturnType<typeof listPages>>, TError = ErrorType<unknown>>(bookId: number,
+    chapterId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPagesQueryKey(bookId,chapterId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPages>>> = ({ signal }) => listPages(bookId,chapterId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(bookId && chapterId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPagesQueryResult = NonNullable<Awaited<ReturnType<typeof listPages>>>
+export type ListPagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List pages within a chapter
+ */
+
+export function useListPages<TData = Awaited<ReturnType<typeof listPages>>, TError = ErrorType<unknown>>(
+ bookId: number,
+    chapterId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPagesQueryOptions(bookId,chapterId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreatePageUrl = (bookId: number,
+    chapterId: number,) => {
+
+
+
+
+  return `/api/books/${bookId}/chapters/${chapterId}/pages`
+}
+
+/**
+ * @summary Create a new page within a chapter
+ */
+export const createPage = async (bookId: number,
+    chapterId: number,
+    pageInput: PageInput, options?: RequestInit): Promise<Page> => {
+
+  return customFetch<Page>(getCreatePageUrl(bookId,chapterId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      pageInput,)
+  }
+);}
+
+
+
+
+export const getCreatePageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPage>>, TError,{bookId: number;chapterId: number;data: BodyType<PageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPage>>, TError,{bookId: number;chapterId: number;data: BodyType<PageInput>}, TContext> => {
+
+const mutationKey = ['createPage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPage>>, {bookId: number;chapterId: number;data: BodyType<PageInput>}> = (props) => {
+          const {bookId,chapterId,data} = props ?? {};
+
+          return  createPage(bookId,chapterId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePageMutationResult = NonNullable<Awaited<ReturnType<typeof createPage>>>
+    export type CreatePageMutationBody = BodyType<PageInput>
+    export type CreatePageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new page within a chapter
+ */
+export const useCreatePage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPage>>, TError,{bookId: number;chapterId: number;data: BodyType<PageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPage>>,
+        TError,
+        {bookId: number;chapterId: number;data: BodyType<PageInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePageMutationOptions(options));
+    }
+
+export const getReorderPagesUrl = (bookId: number,
+    chapterId: number,) => {
+
+
+
+
+  return `/api/books/${bookId}/chapters/${chapterId}/pages/reorder`
+}
+
+/**
+ * @summary Reorder pages within a chapter
+ */
+export const reorderPages = async (bookId: number,
+    chapterId: number,
+    pageReorder: PageReorder, options?: RequestInit): Promise<Page[]> => {
+
+  return customFetch<Page[]>(getReorderPagesUrl(bookId,chapterId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      pageReorder,)
+  }
+);}
+
+
+
+
+export const getReorderPagesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderPages>>, TError,{bookId: number;chapterId: number;data: BodyType<PageReorder>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderPages>>, TError,{bookId: number;chapterId: number;data: BodyType<PageReorder>}, TContext> => {
+
+const mutationKey = ['reorderPages'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderPages>>, {bookId: number;chapterId: number;data: BodyType<PageReorder>}> = (props) => {
+          const {bookId,chapterId,data} = props ?? {};
+
+          return  reorderPages(bookId,chapterId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderPagesMutationResult = NonNullable<Awaited<ReturnType<typeof reorderPages>>>
+    export type ReorderPagesMutationBody = BodyType<PageReorder>
+    export type ReorderPagesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reorder pages within a chapter
+ */
+export const useReorderPages = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderPages>>, TError,{bookId: number;chapterId: number;data: BodyType<PageReorder>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reorderPages>>,
+        TError,
+        {bookId: number;chapterId: number;data: BodyType<PageReorder>},
+        TContext
+      > => {
+      return useMutation(getReorderPagesMutationOptions(options));
+    }
+
+export const getUpdatePageUrl = (bookId: number,
+    chapterId: number,
+    pageId: number,) => {
+
+
+
+
+  return `/api/books/${bookId}/chapters/${chapterId}/pages/${pageId}`
+}
+
+/**
+ * @summary Update a page
+ */
+export const updatePage = async (bookId: number,
+    chapterId: number,
+    pageId: number,
+    pageUpdate: PageUpdate, options?: RequestInit): Promise<Page> => {
+
+  return customFetch<Page>(getUpdatePageUrl(bookId,chapterId,pageId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      pageUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdatePageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePage>>, TError,{bookId: number;chapterId: number;pageId: number;data: BodyType<PageUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePage>>, TError,{bookId: number;chapterId: number;pageId: number;data: BodyType<PageUpdate>}, TContext> => {
+
+const mutationKey = ['updatePage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePage>>, {bookId: number;chapterId: number;pageId: number;data: BodyType<PageUpdate>}> = (props) => {
+          const {bookId,chapterId,pageId,data} = props ?? {};
+
+          return  updatePage(bookId,chapterId,pageId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePageMutationResult = NonNullable<Awaited<ReturnType<typeof updatePage>>>
+    export type UpdatePageMutationBody = BodyType<PageUpdate>
+    export type UpdatePageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a page
+ */
+export const useUpdatePage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePage>>, TError,{bookId: number;chapterId: number;pageId: number;data: BodyType<PageUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePage>>,
+        TError,
+        {bookId: number;chapterId: number;pageId: number;data: BodyType<PageUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdatePageMutationOptions(options));
+    }
+
+export const getDeletePageUrl = (bookId: number,
+    chapterId: number,
+    pageId: number,) => {
+
+
+
+
+  return `/api/books/${bookId}/chapters/${chapterId}/pages/${pageId}`
+}
+
+/**
+ * @summary Delete a page
+ */
+export const deletePage = async (bookId: number,
+    chapterId: number,
+    pageId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePageUrl(bookId,chapterId,pageId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePage>>, TError,{bookId: number;chapterId: number;pageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePage>>, TError,{bookId: number;chapterId: number;pageId: number}, TContext> => {
+
+const mutationKey = ['deletePage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePage>>, {bookId: number;chapterId: number;pageId: number}> = (props) => {
+          const {bookId,chapterId,pageId} = props ?? {};
+
+          return  deletePage(bookId,chapterId,pageId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePageMutationResult = NonNullable<Awaited<ReturnType<typeof deletePage>>>
+
+    export type DeletePageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a page
+ */
+export const useDeletePage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePage>>, TError,{bookId: number;chapterId: number;pageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePage>>,
+        TError,
+        {bookId: number;chapterId: number;pageId: number},
+        TContext
+      > => {
+      return useMutation(getDeletePageMutationOptions(options));
     }
 
 export const getAppendTextToBookUrl = (bookId: number,) => {

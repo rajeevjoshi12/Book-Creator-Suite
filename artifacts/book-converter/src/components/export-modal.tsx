@@ -70,8 +70,8 @@ export function ExportModal({ bookId, open, onOpenChange }: ExportModalProps) {
               <BookOpen className="w-5 h-5" />
             </div>
             <div className="flex flex-col items-start">
-              <span className="font-medium text-base">Kindle (EPUB)</span>
-              <span className="text-xs text-muted-foreground">Compatible with all Kindle devices and apps</span>
+              <span className="font-medium text-base">Kindle (.mobi)</span>
+              <span className="text-xs text-muted-foreground">Mobipocket format for all Kindle devices and apps</span>
             </div>
           </Button>
 

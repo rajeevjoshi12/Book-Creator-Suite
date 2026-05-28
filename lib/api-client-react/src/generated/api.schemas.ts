@@ -116,6 +116,33 @@ export interface ChapterReorder {
   orderedIds: number[];
 }
 
+export interface Page {
+  id: number;
+  bookId: number;
+  chapterId: number;
+  title: string;
+  content: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PageInput {
+  title: string;
+  content: string;
+  sortOrder?: number;
+}
+
+export interface PageUpdate {
+  title?: string;
+  content?: string;
+  sortOrder?: number;
+}
+
+export interface PageReorder {
+  orderedIds: number[];
+}
+
 export interface AppendTextInput {
   text: string;
   chapterTitle?: string;

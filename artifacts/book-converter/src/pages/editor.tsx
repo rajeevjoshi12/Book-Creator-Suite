@@ -9,9 +9,15 @@ import {
   useReorderChapters,
   useAppendTextToBook,
   useParseText,
+  useListPages,
+  useCreatePage,
+  useUpdatePage,
+  useDeletePage,
+  useReorderPages,
   getGetBookQueryKey,
   getListBooksQueryKey,
   getGetLibraryStatsQueryKey,
+  getListPagesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -48,6 +54,8 @@ import {
   Loader2,
   Upload,
   ChevronDown,
+  FileText,
+  LayoutList,
 } from "lucide-react";
 
 const BASE_URL = import.meta.env.BASE_URL ?? "/";
@@ -115,6 +123,47 @@ function SortableChapter({ chapter, isActive, onSelect, onDelete }: SortableChap
   );
 }
 
+interface SortablePageProps {
+  page: { id: number; title: string; content: string; sortOrder: number };
+  isActive: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+}
+
+function SortablePage({ page, isActive, onSelect, onDelete }: SortablePageProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: page.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      data-testid={`page-item-${page.id}`}
+      className={`group flex items-center gap-1 px-2 py-2 rounded-md cursor-pointer transition-colors ${
+        isActive ? "bg-primary text-primary-foreground" : "hover:bg-accent text-foreground"
+      }`}
+      onClick={onSelect}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="opacity-0 group-hover:opacity-50 shrink-0 cursor-grab active:cursor-grabbing p-0.5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical className="w-3 h-3" />
+      </button>
+      <FileText className="w-3 h-3 shrink-0 opacity-60" />
+      <p className="text-xs flex-1 truncate leading-snug ml-1">{page.title || "Untitled page"}</p>
+      <button
+        className="opacity-0 group-hover:opacity-60 hover:opacity-100 shrink-0 p-0.5 hover:text-destructive transition-colors"
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        data-testid={`button-delete-page-${page.id}`}
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
 type ChapterType = "chapter" | "subchapter" | "section";
 
 export default function EditorPage() {
@@ -125,6 +174,10 @@ export default function EditorPage() {
   const queryClient = useQueryClient();
 
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
+  const [activeView, setActiveView] = useState<"content" | "pages">("content");
+  const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
+  const [pageTitle, setPageTitle] = useState<Record<number, string>>({});
+  const [pageContent, setPageContent] = useState<Record<number, string>>({});
   const [exportOpen, setExportOpen] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState("");
@@ -158,11 +211,78 @@ export default function EditorPage() {
   const appendTextMutation = useAppendTextToBook();
   const parseText = useParseText();
 
+  const createPage = useCreatePage();
+  const updatePage = useUpdatePage();
+  const deletePage = useDeletePage();
+  const reorderPages = useReorderPages();
+
+  const { data: pages } = useListPages(
+    bookId,
+    selectedChapterId ?? 0,
+    { query: { enabled: !!selectedChapterId, queryKey: getListPagesQueryKey(bookId, selectedChapterId ?? 0) } },
+  );
+
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: getGetBookQueryKey(bookId) });
     queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetLibraryStatsQueryKey() });
   }, [queryClient, bookId]);
+
+  const invalidatePages = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: getListPagesQueryKey(bookId, selectedChapterId ?? 0) });
+  }, [queryClient, bookId, selectedChapterId]);
+
+  const selectedPage = pages?.find((p) => p.id === selectedPageId);
+  const currentPageTitle = selectedPageId != null ? (pageTitle[selectedPageId] ?? selectedPage?.title ?? "") : "";
+  const currentPageContent = selectedPageId != null ? (pageContent[selectedPageId] ?? selectedPage?.content ?? "") : "";
+
+  const handleAddPage = () => {
+    if (!selectedChapterId) return;
+    createPage.mutate(
+      { bookId, chapterId: selectedChapterId, data: { title: "New Page", content: "", sortOrder: pages?.length ?? 0 } },
+      {
+        onSuccess: (p) => { invalidatePages(); setSelectedPageId(p.id); },
+        onError: () => toast({ title: "Failed to create page", variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleSavePage = () => {
+    if (!selectedPageId || !selectedChapterId) return;
+    updatePage.mutate(
+      { bookId, chapterId: selectedChapterId, pageId: selectedPageId, data: { title: currentPageTitle, content: currentPageContent } },
+      {
+        onSuccess: () => { invalidatePages(); toast({ title: "Page saved" }); },
+        onError: () => toast({ title: "Save failed", variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleDeletePage = (pageId: number) => {
+    if (!selectedChapterId) return;
+    if (!confirm("Delete this page?")) return;
+    deletePage.mutate(
+      { bookId, chapterId: selectedChapterId, pageId },
+      {
+        onSuccess: () => { if (selectedPageId === pageId) setSelectedPageId(null); invalidatePages(); },
+      },
+    );
+  };
+
+  const handlePageDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !pages || !selectedChapterId) return;
+    const oldIndex = pages.findIndex((p) => p.id === active.id);
+    const newIndex = pages.findIndex((p) => p.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newOrder = [...pages];
+    const [removed] = newOrder.splice(oldIndex, 1);
+    newOrder.splice(newIndex, 0, removed);
+    reorderPages.mutate(
+      { bookId, chapterId: selectedChapterId, data: { orderedIds: newOrder.map((p) => p.id) } },
+      { onSuccess: invalidatePages },
+    );
+  };
 
   const selectedChapter = book?.chapters?.find((c) => c.id === selectedChapterId);
   const currentContent = selectedChapterId != null
@@ -618,11 +738,11 @@ export default function EditorPage() {
                   <Button
                     size="sm"
                     className="gap-1.5 h-8"
-                    onClick={handleSaveChapter}
-                    disabled={updateChapter.isPending}
+                    onClick={activeView === "content" ? handleSaveChapter : handleSavePage}
+                    disabled={updateChapter.isPending || updatePage.isPending}
                     data-testid="button-save-chapter"
                   >
-                    {updateChapter.isPending ? (
+                    {(updateChapter.isPending || updatePage.isPending) ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
                     ) : (
                       <Save className="w-3 h-3" />
@@ -632,18 +752,148 @@ export default function EditorPage() {
                 </div>
               </div>
 
-              {/* Content editor */}
-              <div className="flex-1 overflow-hidden flex flex-col" data-testid="input-chapter-content">
-                <RichTextEditor
-                  key={selectedChapterId}
-                  content={plainTextToHtml(currentContent)}
-                  onChange={(html) =>
-                    setChapterContent((prev) => ({ ...prev, [selectedChapterId!]: htmlToPlainText(html) }))
-                  }
-                  placeholder="Start writing your chapter content here..."
-                  className="flex-1 overflow-hidden"
-                />
+              {/* View tabs */}
+              <div className="flex items-center border-b border-border shrink-0 px-6">
+                <button
+                  className={`flex items-center gap-1.5 px-1 py-2 text-xs font-medium border-b-2 mr-4 transition-colors ${
+                    activeView === "content"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setActiveView("content")}
+                  data-testid="tab-content"
+                >
+                  <LayoutList className="w-3 h-3" />
+                  Content
+                </button>
+                <button
+                  className={`flex items-center gap-1.5 px-1 py-2 text-xs font-medium border-b-2 transition-colors ${
+                    activeView === "pages"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setActiveView("pages")}
+                  data-testid="tab-pages"
+                >
+                  <FileText className="w-3 h-3" />
+                  Pages
+                  {pages && pages.length > 0 && (
+                    <span className="ml-1 text-[10px] bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 font-mono">
+                      {pages.length}
+                    </span>
+                  )}
+                </button>
               </div>
+
+              {activeView === "content" && (
+                <div className="flex-1 overflow-hidden flex flex-col" data-testid="input-chapter-content">
+                  <RichTextEditor
+                    key={selectedChapterId}
+                    content={plainTextToHtml(currentContent)}
+                    onChange={(html) =>
+                      setChapterContent((prev) => ({ ...prev, [selectedChapterId!]: htmlToPlainText(html) }))
+                    }
+                    placeholder="Start writing your chapter content here..."
+                    className="flex-1 overflow-hidden"
+                  />
+                </div>
+              )}
+
+              {activeView === "pages" && (
+                <div className="flex-1 overflow-hidden flex" data-testid="pages-panel">
+                  {/* Pages list */}
+                  <div className="w-52 border-r border-border flex flex-col shrink-0 overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pages</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={handleAddPage}
+                        data-testid="button-add-page"
+                        title="Add page"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2">
+                      {(!pages || pages.length === 0) && (
+                        <div className="text-center py-6">
+                          <FileText className="w-5 h-5 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-xs text-muted-foreground">No pages yet</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2 text-xs gap-1"
+                            onClick={handleAddPage}
+                          >
+                            <Plus className="w-3 h-3" /> Add page
+                          </Button>
+                        </div>
+                      )}
+                      {pages && pages.length > 0 && (
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handlePageDragEnd}
+                        >
+                          <SortableContext
+                            items={pages.map((p) => p.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {pages.map((p) => (
+                              <SortablePage
+                                key={p.id}
+                                page={p}
+                                isActive={p.id === selectedPageId}
+                                onSelect={() => setSelectedPageId(p.id)}
+                                onDelete={() => handleDeletePage(p.id)}
+                              />
+                            ))}
+                          </SortableContext>
+                        </DndContext>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Page editor */}
+                  <div className="flex-1 overflow-hidden flex flex-col">
+                    {!selectedPage ? (
+                      <div className="flex-1 flex items-center justify-center text-center">
+                        <div>
+                          <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            {pages && pages.length > 0 ? "Select a page to edit" : "Add a page to get started"}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="px-4 py-2 border-b border-border shrink-0">
+                          <input
+                            className="w-full font-medium text-sm bg-transparent border-none outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground"
+                            value={currentPageTitle}
+                            onChange={(e) => setPageTitle((prev) => ({ ...prev, [selectedPageId!]: e.target.value }))}
+                            placeholder="Page title"
+                            data-testid="input-page-title"
+                          />
+                        </div>
+                        <div className="flex-1 overflow-hidden flex flex-col" data-testid="input-page-content">
+                          <RichTextEditor
+                            key={selectedPageId}
+                            content={plainTextToHtml(currentPageContent)}
+                            onChange={(html) =>
+                              setPageContent((prev) => ({ ...prev, [selectedPageId!]: htmlToPlainText(html) }))
+                            }
+                            placeholder="Write page content here..."
+                            className="flex-1 overflow-hidden"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </main>
