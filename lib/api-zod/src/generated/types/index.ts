@@ -23,5 +23,7 @@ export * from './healthStatus';
 export * from './libraryStats';
 export * from './parsedChapter';
 export * from './parsedChapterType';
+export * from './parseDocxBody';
+export * from './parsePdfBody';
 export * from './parseResult';
 export * from './parseTextInput';

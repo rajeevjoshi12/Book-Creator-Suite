@@ -14,7 +14,7 @@ export function ExportModal({ bookId, open, onOpenChange }: ExportModalProps) {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
 
-  const handleExport = async (format: "pdf" | "docx" | "epub") => {
+  const handleExport = async (format: "pdf" | "docx" | "mobi") => {
     setIsExporting(true);
     try {
       // Use window.location.href or a hidden link for file download
@@ -63,15 +63,15 @@ export function ExportModal({ bookId, open, onOpenChange }: ExportModalProps) {
           <Button
             variant="outline"
             className="flex items-center justify-start gap-4 h-16 px-4 hover:border-primary transition-colors"
-            onClick={() => handleExport("epub")}
+            onClick={() => handleExport("mobi")}
             disabled={isExporting}
           >
             <div className="bg-primary/5 p-2 rounded-md text-primary">
               <BookOpen className="w-5 h-5" />
             </div>
             <div className="flex flex-col items-start">
-              <span className="font-medium text-base">EPUB</span>
-              <span className="text-xs text-muted-foreground">For Apple Books, Kindle, and e-readers</span>
+              <span className="font-medium text-base">Kindle (EPUB)</span>
+              <span className="text-xs text-muted-foreground">Compatible with all Kindle devices and apps</span>
             </div>
           </Button>
 

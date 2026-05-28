@@ -304,6 +304,66 @@ paths:
               schema:
                 $ref: "#/components/schemas/ParseResult"
 
+  /parse/pdf:
+    post:
+      operationId: parsePdf
+      tags: [upload]
+      summary: Upload a PDF file and parse it into structured chapters
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Parsed chapters from PDF
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParseResult"
+        "400":
+          description: Invalid file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /parse/docx:
+    post:
+      operationId: parseDocx
+      tags: [upload]
+      summary: Upload a Word document and parse it into structured chapters
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Parsed chapters from Word document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParseResult"
+        "400":
+          description: Invalid file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /export/{bookId}/pdf:
     get:
       operationId: exportBookPdf
@@ -370,6 +430,35 @@ paths:
       responses:
         "200":
           description: EPUB file download
+          content:
+            application/epub+zip:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /export/{bookId}/mobi:
+    get:
+      operationId: exportBookMobi
+      tags: [export]
+      summary: Export book as a Kindle-compatible EPUB file
+      description: >
+        Returns an EPUB file compatible with all Kindle devices and apps
+        (Kindle has natively supported EPUB since firmware 3.4, 2022).
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Kindle-compatible EPUB download
           content:
             application/epub+zip:
               schema:

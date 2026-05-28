@@ -152,3 +152,11 @@ export interface LibraryStats {
   recentBooks: Book[];
 }
 
+export type ParsePdfBody = {
+  file: Blob;
+};
+
+export type ParseDocxBody = {
+  file: Blob;
+};
+

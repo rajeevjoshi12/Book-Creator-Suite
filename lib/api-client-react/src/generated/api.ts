@@ -32,6 +32,8 @@ import type {
   ErrorResponse,
   HealthStatus,
   LibraryStats,
+  ParseDocxBody,
+  ParsePdfBody,
   ParseResult,
   ParseTextInput
 } from './api.schemas';
@@ -1082,6 +1084,152 @@ export const useParseText = <TError = ErrorType<unknown>,
       return useMutation(getParseTextMutationOptions(options));
     }
 
+export const getParsePdfUrl = () => {
+
+
+
+
+  return `/api/parse/pdf`
+}
+
+/**
+ * @summary Upload a PDF file and parse it into structured chapters
+ */
+export const parsePdf = async (parsePdfBody: ParsePdfBody, options?: RequestInit): Promise<ParseResult> => {
+    const formData = new FormData();
+formData.append(`file`, parsePdfBody.file);
+
+  return customFetch<ParseResult>(getParsePdfUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getParsePdfMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof parsePdf>>, TError,{data: BodyType<ParsePdfBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof parsePdf>>, TError,{data: BodyType<ParsePdfBody>}, TContext> => {
+
+const mutationKey = ['parsePdf'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof parsePdf>>, {data: BodyType<ParsePdfBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  parsePdf(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ParsePdfMutationResult = NonNullable<Awaited<ReturnType<typeof parsePdf>>>
+    export type ParsePdfMutationBody = BodyType<ParsePdfBody>
+    export type ParsePdfMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Upload a PDF file and parse it into structured chapters
+ */
+export const useParsePdf = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof parsePdf>>, TError,{data: BodyType<ParsePdfBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof parsePdf>>,
+        TError,
+        {data: BodyType<ParsePdfBody>},
+        TContext
+      > => {
+      return useMutation(getParsePdfMutationOptions(options));
+    }
+
+export const getParseDocxUrl = () => {
+
+
+
+
+  return `/api/parse/docx`
+}
+
+/**
+ * @summary Upload a Word document and parse it into structured chapters
+ */
+export const parseDocx = async (parseDocxBody: ParseDocxBody, options?: RequestInit): Promise<ParseResult> => {
+    const formData = new FormData();
+formData.append(`file`, parseDocxBody.file);
+
+  return customFetch<ParseResult>(getParseDocxUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getParseDocxMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof parseDocx>>, TError,{data: BodyType<ParseDocxBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof parseDocx>>, TError,{data: BodyType<ParseDocxBody>}, TContext> => {
+
+const mutationKey = ['parseDocx'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof parseDocx>>, {data: BodyType<ParseDocxBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  parseDocx(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ParseDocxMutationResult = NonNullable<Awaited<ReturnType<typeof parseDocx>>>
+    export type ParseDocxMutationBody = BodyType<ParseDocxBody>
+    export type ParseDocxMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Upload a Word document and parse it into structured chapters
+ */
+export const useParseDocx = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof parseDocx>>, TError,{data: BodyType<ParseDocxBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof parseDocx>>,
+        TError,
+        {data: BodyType<ParseDocxBody>},
+        TContext
+      > => {
+      return useMutation(getParseDocxMutationOptions(options));
+    }
+
 export const getExportBookPdfUrl = (bookId: number,) => {
 
 
@@ -1301,6 +1449,85 @@ export function useExportBookEpub<TData = Awaited<ReturnType<typeof exportBookEp
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getExportBookEpubQueryOptions(bookId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getExportBookMobiUrl = (bookId: number,) => {
+
+
+
+
+  return `/api/export/${bookId}/mobi`
+}
+
+/**
+ * Returns an EPUB file compatible with all Kindle devices and apps (Kindle has natively supported EPUB since firmware 3.4, 2022).
+
+ * @summary Export book as a Kindle-compatible EPUB file
+ */
+export const exportBookMobi = async (bookId: number, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getExportBookMobiUrl(bookId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportBookMobiQueryKey = (bookId: number,) => {
+    return [
+    `/api/export/${bookId}/mobi`
+    ] as const;
+    }
+
+
+export const getExportBookMobiQueryOptions = <TData = Awaited<ReturnType<typeof exportBookMobi>>, TError = ErrorType<ErrorResponse>>(bookId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportBookMobi>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportBookMobiQueryKey(bookId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportBookMobi>>> = ({ signal }) => exportBookMobi(bookId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(bookId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportBookMobi>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportBookMobiQueryResult = NonNullable<Awaited<ReturnType<typeof exportBookMobi>>>
+export type ExportBookMobiQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Export book as a Kindle-compatible EPUB file
+ */
+
+export function useExportBookMobi<TData = Awaited<ReturnType<typeof exportBookMobi>>, TError = ErrorType<ErrorResponse>>(
+ bookId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportBookMobi>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportBookMobiQueryOptions(bookId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

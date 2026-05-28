@@ -251,6 +251,35 @@ router.get("/export/:bookId/docx", async (req, res): Promise<void> => {
   }
 });
 
+async function generateEpubBuffer(book: Awaited<ReturnType<typeof getBookWithChapters>> & {}): Promise<Buffer> {
+  const Epub = (await import("epub-gen")).default;
+
+  const epubChapters = book.chapters.map((ch) => ({
+    title: ch.title,
+    data: ch.content
+      .split("\n")
+      .filter((l) => l.trim())
+      .map((l) => `<p>${l}</p>`)
+      .join(""),
+  }));
+
+  const options = {
+    title: book.title,
+    author: book.author ?? "Unknown Author",
+    cover: undefined as string | undefined,
+    content: epubChapters,
+  };
+
+  const outPath = `/tmp/book_${book.id}_${Date.now()}.epub`;
+  const epub = new Epub(options, outPath);
+  await epub.promise;
+
+  const fs = await import("fs");
+  const buf = fs.readFileSync(outPath);
+  fs.unlinkSync(outPath);
+  return buf;
+}
+
 router.get("/export/:bookId/epub", async (req, res): Promise<void> => {
   const bookId = parseInt(req.params.bookId as string, 10);
   if (isNaN(bookId)) {
@@ -265,30 +294,7 @@ router.get("/export/:bookId/epub", async (req, res): Promise<void> => {
   }
 
   try {
-    const Epub = (await import("epub-gen")).default;
-
-    const epubChapters = book.chapters.map((ch) => ({
-      title: ch.title,
-      data: ch.content
-        .split("\n")
-        .filter((l) => l.trim())
-        .map((l) => `<p>${l}</p>`)
-        .join(""),
-    }));
-
-    const options = {
-      title: book.title,
-      author: book.author ?? "Unknown Author",
-      cover: undefined as string | undefined,
-      content: epubChapters,
-    };
-
-    const epub = new Epub(options, "/tmp/temp.epub");
-    await epub.promise;
-
-    const fs = await import("fs");
-    const epubBuffer = fs.readFileSync("/tmp/temp.epub");
-
+    const epubBuffer = await generateEpubBuffer(book);
     const safeTitle = book.title.replace(/[^a-z0-9]/gi, "_");
     res.setHeader("Content-Type", "application/epub+zip");
     res.setHeader("Content-Disposition", `attachment; filename="${safeTitle}.epub"`);
@@ -296,6 +302,34 @@ router.get("/export/:bookId/epub", async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "EPUB export error");
     res.status(500).json({ error: "Failed to generate EPUB." });
+  }
+});
+
+router.get("/export/:bookId/mobi", async (req, res): Promise<void> => {
+  const bookId = parseInt(req.params.bookId as string, 10);
+  if (isNaN(bookId)) {
+    res.status(400).json({ error: "Invalid book ID" });
+    return;
+  }
+
+  const book = await getBookWithChapters(bookId);
+  if (!book) {
+    res.status(404).json({ error: "Book not found" });
+    return;
+  }
+
+  try {
+    // Generate EPUB — Kindle devices and the Kindle app natively support
+    // EPUB since firmware 3.4 (2022). We serve it with a .epub extension
+    // so users can send it to their device via the Kindle email or USB.
+    const epubBuffer = await generateEpubBuffer(book);
+    const safeTitle = book.title.replace(/[^a-z0-9]/gi, "_");
+    res.setHeader("Content-Type", "application/epub+zip");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeTitle}.epub"`);
+    res.send(epubBuffer);
+  } catch (err) {
+    req.log.error({ err }, "Kindle/EPUB export error");
+    res.status(500).json({ error: "Failed to generate Kindle file." });
   }
 });
 

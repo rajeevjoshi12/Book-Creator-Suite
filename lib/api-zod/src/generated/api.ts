@@ -289,6 +289,40 @@ export const ParseTextResponse = zod.object({
 
 
 /**
+ * @summary Upload a PDF file and parse it into structured chapters
+ */
+export const ParsePdfBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const ParsePdfResponse = zod.object({
+  "suggestedTitle": zod.string(),
+  "chapters": zod.array(zod.object({
+  "title": zod.string(),
+  "type": zod.enum(['chapter', 'subchapter', 'section']),
+  "content": zod.string()
+}))
+})
+
+
+/**
+ * @summary Upload a Word document and parse it into structured chapters
+ */
+export const ParseDocxBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const ParseDocxResponse = zod.object({
+  "suggestedTitle": zod.string(),
+  "chapters": zod.array(zod.object({
+  "title": zod.string(),
+  "type": zod.enum(['chapter', 'subchapter', 'section']),
+  "content": zod.string()
+}))
+})
+
+
+/**
  * @summary Export book as a PDF file
  */
 export const ExportBookPdfParams = zod.object({
@@ -308,6 +342,16 @@ export const ExportBookDocxParams = zod.object({
  * @summary Export book as an EPUB file
  */
 export const ExportBookEpubParams = zod.object({
+  "bookId": zod.coerce.number()
+})
+
+
+/**
+ * Returns an EPUB file compatible with all Kindle devices and apps (Kindle has natively supported EPUB since firmware 3.4, 2022).
+
+ * @summary Export book as a Kindle-compatible EPUB file
+ */
+export const ExportBookMobiParams = zod.object({
   "bookId": zod.coerce.number()
 })
 

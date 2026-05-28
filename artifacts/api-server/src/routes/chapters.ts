@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, asc, desc, and } from "drizzle-orm";
 import { db, chaptersTable } from "@workspace/db";
 import {
   CreateChapterBody,
@@ -88,7 +88,7 @@ router.patch(
         db
           .update(chaptersTable)
           .set({ sortOrder: index, updatedAt: new Date() })
-          .where(eq(chaptersTable.id, id)),
+          .where(and(eq(chaptersTable.id, id), eq(chaptersTable.bookId, params.data.bookId))),
       ),
     );
 
@@ -121,8 +121,10 @@ router.patch(
       .update(chaptersTable)
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(
-        eq(chaptersTable.id, params.data.chapterId) &&
+        and(
+          eq(chaptersTable.id, params.data.chapterId),
           eq(chaptersTable.bookId, params.data.bookId),
+        ),
       )
       .returning();
 
@@ -147,8 +149,10 @@ router.delete(
     const [deleted] = await db
       .delete(chaptersTable)
       .where(
-        eq(chaptersTable.id, params.data.chapterId) &&
+        and(
+          eq(chaptersTable.id, params.data.chapterId),
           eq(chaptersTable.bookId, params.data.bookId),
+        ),
       )
       .returning();
 

@@ -199,6 +199,9 @@ importers:
       mammoth:
         specifier: ^1.12.0
         version: 1.12.0
+      mobi:
+        specifier: ^0.0.1
+        version: 0.0.1
       multer:
         specifier: ^2.1.1
         version: 2.1.1
@@ -3123,6 +3126,9 @@ packages:
   mitt@3.0.1:
     resolution: {integrity: sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==}
 
+  mobi@0.0.1:
+    resolution: {integrity: sha512-iTMFpz11tqywFzcUu9QBvas9V3cyFP0eldroidwT0T43DEw+5uBM33AzHCHqXQeiqMvDlQicSePy86wTSQjDgg==}
+
   modern-screenshot@4.7.0:
     resolution: {integrity: sha512-9YxN+ddPSMMlhylOv25VHzXrl9u67QRxoh7+SEewGtgUw7t6hHTrjptSDJUSne9oG4Xk/h2cwG15nIt4Hc9ujg==}
 
@@ -3416,6 +3422,9 @@ packages:
   punycode.js@2.3.1:
     resolution: {integrity: sha512-uxFIHU0YlHYhDQtV4R9J6a52SLx28BCjT+4ieh7IGbgwVJWO+km431c4yRlREUAsAmt/uMjQUyQHNEPf0M39CA==}
     engines: {node: '>=6'}
+
+  pypacker@0.2.1:
+    resolution: {integrity: sha512-6qxjNczhB24b9P6cGPLkyvXOWxAlrgbejANN0kQfk+C6j8ukwuYt85bJlZHFvxF+b3MzMI/U1eseTt9mlDZHAQ==}
 
   q@1.5.1:
     resolution: {integrity: sha512-kV/CThkXo6xyFEZUugw/+pIOywXcDbFYgSct5cT3gqlbkBE1SJdwy6UQoZvodiWF/ckQLZyDE/Bu1M6gVu5lVw==}
@@ -6528,6 +6537,10 @@ snapshots:
 
   mitt@3.0.1: {}
 
+  mobi@0.0.1:
+    dependencies:
+      pypacker: 0.2.1
+
   modern-screenshot@4.7.0: {}
 
   motion-dom@12.38.0:
@@ -6877,6 +6890,8 @@ snapshots:
       once: 1.4.0
 
   punycode.js@2.3.1: {}
+
+  pypacker@0.2.1: {}
 
   q@1.5.1: {}
 
