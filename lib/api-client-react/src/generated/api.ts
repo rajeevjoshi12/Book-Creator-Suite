@@ -1470,9 +1470,9 @@ export const getExportBookMobiUrl = (bookId: number,) => {
 }
 
 /**
- * Returns an EPUB file compatible with all Kindle devices and apps (Kindle has natively supported EPUB since firmware 3.4, 2022).
+ * Returns a Mobipocket (.mobi) file for Kindle devices and apps.
 
- * @summary Export book as a Kindle-compatible EPUB file
+ * @summary Export book as a Kindle MOBI file
  */
 export const exportBookMobi = async (bookId: number, options?: RequestInit): Promise<Blob> => {
 
@@ -1519,7 +1519,7 @@ export type ExportBookMobiQueryError = ErrorType<ErrorResponse>
 
 
 /**
- * @summary Export book as a Kindle-compatible EPUB file
+ * @summary Export book as a Kindle MOBI file
  */
 
 export function useExportBookMobi<TData = Awaited<ReturnType<typeof exportBookMobi>>, TError = ErrorType<ErrorResponse>>(

@@ -347,9 +347,9 @@ export const ExportBookEpubParams = zod.object({
 
 
 /**
- * Returns an EPUB file compatible with all Kindle devices and apps (Kindle has natively supported EPUB since firmware 3.4, 2022).
+ * Returns a Mobipocket (.mobi) file for Kindle devices and apps.
 
- * @summary Export book as a Kindle-compatible EPUB file
+ * @summary Export book as a Kindle MOBI file
  */
 export const ExportBookMobiParams = zod.object({
   "bookId": zod.coerce.number()

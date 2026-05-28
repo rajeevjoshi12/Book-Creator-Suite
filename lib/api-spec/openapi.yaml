@@ -446,10 +446,9 @@ paths:
     get:
       operationId: exportBookMobi
       tags: [export]
-      summary: Export book as a Kindle-compatible EPUB file
+      summary: Export book as a Kindle MOBI file
       description: >
-        Returns an EPUB file compatible with all Kindle devices and apps
-        (Kindle has natively supported EPUB since firmware 3.4, 2022).
+        Returns a Mobipocket (.mobi) file for Kindle devices and apps.
       parameters:
         - name: bookId
           in: path
@@ -458,9 +457,9 @@ paths:
             type: integer
       responses:
         "200":
-          description: Kindle-compatible EPUB download
+          description: Kindle MOBI file download
           content:
-            application/epub+zip:
+            application/x-mobipocket-ebook:
               schema:
                 type: string
                 format: binary

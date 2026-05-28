@@ -319,17 +319,20 @@ router.get("/export/:bookId/mobi", async (req, res): Promise<void> => {
   }
 
   try {
-    // Generate EPUB — Kindle devices and the Kindle app natively support
-    // EPUB since firmware 3.4 (2022). We serve it with a .epub extension
-    // so users can send it to their device via the Kindle email or USB.
-    const epubBuffer = await generateEpubBuffer(book);
+    const { generateMobi } = await import("../utils/mobi-writer.js");
+    const mobiBuffer = generateMobi({
+      title: book.title,
+      author: book.author ?? "Unknown Author",
+      chapters: book.chapters.map((ch) => ({ title: ch.title, content: ch.content })),
+    });
+
     const safeTitle = book.title.replace(/[^a-z0-9]/gi, "_");
-    res.setHeader("Content-Type", "application/epub+zip");
-    res.setHeader("Content-Disposition", `attachment; filename="${safeTitle}.epub"`);
-    res.send(epubBuffer);
+    res.setHeader("Content-Type", "application/x-mobipocket-ebook");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeTitle}.mobi"`);
+    res.send(mobiBuffer);
   } catch (err) {
-    req.log.error({ err }, "Kindle/EPUB export error");
-    res.status(500).json({ error: "Failed to generate Kindle file." });
+    req.log.error({ err }, "MOBI export error");
+    res.status(500).json({ error: "Failed to generate MOBI file." });
   }
 });
 

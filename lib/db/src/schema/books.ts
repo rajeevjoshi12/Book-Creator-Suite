@@ -42,3 +42,25 @@ export const insertChapterSchema = createInsertSchema(chaptersTable).omit({
 });
 export type InsertChapter = z.infer<typeof insertChapterSchema>;
 export type Chapter = typeof chaptersTable.$inferSelect;
+
+export const pagesTable = pgTable("pages", {
+  id: serial("id").primaryKey(),
+  bookId: integer("book_id")
+    .notNull()
+    .references(() => booksTable.id, { onDelete: "cascade" }),
+  chapterId: integer("chapter_id")
+    .notNull()
+    .references(() => chaptersTable.id, { onDelete: "cascade" }),
+  content: text("content").notNull().default(""),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertPageSchema = createInsertSchema(pagesTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertPage = z.infer<typeof insertPageSchema>;
+export type Page = typeof pagesTable.$inferSelect;
