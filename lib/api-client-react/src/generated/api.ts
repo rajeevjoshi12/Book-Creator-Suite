@@ -1082,3 +1082,234 @@ export const useParseText = <TError = ErrorType<unknown>,
       return useMutation(getParseTextMutationOptions(options));
     }
 
+export const getExportBookPdfUrl = (bookId: number,) => {
+
+
+
+
+  return `/api/export/${bookId}/pdf`
+}
+
+/**
+ * @summary Export book as a PDF file
+ */
+export const exportBookPdf = async (bookId: number, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getExportBookPdfUrl(bookId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportBookPdfQueryKey = (bookId: number,) => {
+    return [
+    `/api/export/${bookId}/pdf`
+    ] as const;
+    }
+
+
+export const getExportBookPdfQueryOptions = <TData = Awaited<ReturnType<typeof exportBookPdf>>, TError = ErrorType<ErrorResponse>>(bookId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportBookPdf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportBookPdfQueryKey(bookId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportBookPdf>>> = ({ signal }) => exportBookPdf(bookId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(bookId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportBookPdf>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportBookPdfQueryResult = NonNullable<Awaited<ReturnType<typeof exportBookPdf>>>
+export type ExportBookPdfQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Export book as a PDF file
+ */
+
+export function useExportBookPdf<TData = Awaited<ReturnType<typeof exportBookPdf>>, TError = ErrorType<ErrorResponse>>(
+ bookId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportBookPdf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportBookPdfQueryOptions(bookId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getExportBookDocxUrl = (bookId: number,) => {
+
+
+
+
+  return `/api/export/${bookId}/docx`
+}
+
+/**
+ * @summary Export book as a Word document
+ */
+export const exportBookDocx = async (bookId: number, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getExportBookDocxUrl(bookId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportBookDocxQueryKey = (bookId: number,) => {
+    return [
+    `/api/export/${bookId}/docx`
+    ] as const;
+    }
+
+
+export const getExportBookDocxQueryOptions = <TData = Awaited<ReturnType<typeof exportBookDocx>>, TError = ErrorType<ErrorResponse>>(bookId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportBookDocx>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportBookDocxQueryKey(bookId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportBookDocx>>> = ({ signal }) => exportBookDocx(bookId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(bookId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportBookDocx>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportBookDocxQueryResult = NonNullable<Awaited<ReturnType<typeof exportBookDocx>>>
+export type ExportBookDocxQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Export book as a Word document
+ */
+
+export function useExportBookDocx<TData = Awaited<ReturnType<typeof exportBookDocx>>, TError = ErrorType<ErrorResponse>>(
+ bookId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportBookDocx>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportBookDocxQueryOptions(bookId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getExportBookEpubUrl = (bookId: number,) => {
+
+
+
+
+  return `/api/export/${bookId}/epub`
+}
+
+/**
+ * @summary Export book as an EPUB file
+ */
+export const exportBookEpub = async (bookId: number, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getExportBookEpubUrl(bookId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportBookEpubQueryKey = (bookId: number,) => {
+    return [
+    `/api/export/${bookId}/epub`
+    ] as const;
+    }
+
+
+export const getExportBookEpubQueryOptions = <TData = Awaited<ReturnType<typeof exportBookEpub>>, TError = ErrorType<ErrorResponse>>(bookId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportBookEpub>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportBookEpubQueryKey(bookId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportBookEpub>>> = ({ signal }) => exportBookEpub(bookId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(bookId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportBookEpub>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportBookEpubQueryResult = NonNullable<Awaited<ReturnType<typeof exportBookEpub>>>
+export type ExportBookEpubQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Export book as an EPUB file
+ */
+
+export function useExportBookEpub<TData = Awaited<ReturnType<typeof exportBookEpub>>, TError = ErrorType<ErrorResponse>>(
+ bookId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportBookEpub>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportBookEpubQueryOptions(bookId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+

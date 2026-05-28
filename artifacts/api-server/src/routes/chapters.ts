@@ -120,7 +120,10 @@ router.patch(
     const [updated] = await db
       .update(chaptersTable)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(chaptersTable.id, params.data.chapterId))
+      .where(
+        eq(chaptersTable.id, params.data.chapterId) &&
+          eq(chaptersTable.bookId, params.data.bookId),
+      )
       .returning();
 
     if (!updated) {
@@ -143,7 +146,10 @@ router.delete(
 
     const [deleted] = await db
       .delete(chaptersTable)
-      .where(eq(chaptersTable.id, params.data.chapterId))
+      .where(
+        eq(chaptersTable.id, params.data.chapterId) &&
+          eq(chaptersTable.bookId, params.data.bookId),
+      )
       .returning();
 
     if (!deleted) {

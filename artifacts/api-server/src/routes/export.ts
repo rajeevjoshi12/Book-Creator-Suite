@@ -93,30 +93,77 @@ router.get("/export/:bookId/pdf", async (req, res): Promise<void> => {
     return;
   }
 
-  const html = buildHtmlBook(book, book.chapters);
-
   try {
-    const puppeteer = await import("puppeteer");
-    const browser = await puppeteer.default.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
-    const pdf = await page.pdf({
-      format: "A4",
-      margin: { top: "2cm", right: "2cm", bottom: "2cm", left: "2cm" },
-      printBackground: true,
-    });
-    await browser.close();
+    const PDFDocument = (await import("pdfkit")).default;
+    const doc = new PDFDocument({ margin: 72, size: "A4" });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
 
+    await new Promise<void>((resolve, reject) => {
+      doc.on("end", resolve);
+      doc.on("error", reject);
+
+      const margin = 72;
+      const pageWidth = doc.page.width - margin * 2;
+
+      // Title page
+      doc.moveDown(8);
+      doc.font("Times-Bold").fontSize(28).text(book.title, { align: "center", width: pageWidth });
+      if (book.author) {
+        doc.moveDown(1);
+        doc.font("Times-Roman").fontSize(16).fillColor("#555555").text(`by ${book.author}`, { align: "center" });
+      }
+      if (book.description) {
+        doc.moveDown(2);
+        doc.font("Times-Italic").fontSize(12).fillColor("#888888").text(book.description, { align: "center", width: pageWidth });
+      }
+
+      // Table of contents
+      if (book.chapters.length > 1) {
+        doc.addPage();
+        doc.fillColor("#000000").font("Times-Bold").fontSize(20).text("Table of Contents", { align: "center" });
+        doc.moveDown(1.5);
+        book.chapters.forEach((ch, i) => {
+          const indent = ch.type === "chapter" ? 0 : ch.type === "subchapter" ? 20 : 40;
+          const fontSize = ch.type === "chapter" ? 13 : 11;
+          doc.font(ch.type === "chapter" ? "Times-Bold" : "Times-Roman")
+            .fontSize(fontSize)
+            .fillColor("#333333")
+            .text(`${i + 1}. ${ch.title}`, margin + indent, undefined, { width: pageWidth - indent });
+          doc.moveDown(0.4);
+        });
+      }
+
+      // Chapters
+      book.chapters.forEach((ch, i) => {
+        doc.addPage();
+
+        const headingSize = ch.type === "chapter" ? 22 : ch.type === "subchapter" ? 18 : 15;
+        doc.font("Times-Bold").fontSize(headingSize).fillColor("#1a202c").text(ch.title, { width: pageWidth });
+        doc.moveDown(1.2);
+
+        const paragraphs = ch.content.split("\n").filter((p) => p.trim());
+        paragraphs.forEach((para) => {
+          doc.font("Times-Roman").fontSize(12).fillColor("#2d3748")
+            .text(para, { width: pageWidth, lineGap: 4, paragraphGap: 8 });
+        });
+
+        if (!ch.content.trim()) {
+          doc.font("Times-Italic").fontSize(12).fillColor("#999999").text("(No content)");
+        }
+      });
+
+      doc.end();
+    });
+
+    const pdfBuffer = Buffer.concat(chunks);
     const safeTitle = book.title.replace(/[^a-z0-9]/gi, "_");
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${safeTitle}.pdf"`);
-    res.send(Buffer.from(pdf));
+    res.send(pdfBuffer);
   } catch (err) {
     req.log.error({ err }, "PDF export error");
-    res.status(500).json({ error: "Failed to generate PDF. Puppeteer may not be available." });
+    res.status(500).json({ error: "Failed to generate PDF." });
   }
 });
 

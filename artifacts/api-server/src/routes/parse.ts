@@ -121,7 +121,8 @@ router.post("/parse/pdf", upload.single("file"), async (req, res): Promise<void>
   }
 
   try {
-    const pdfParse = (await import("pdf-parse")).default;
+    const pdfParseModule = await import("pdf-parse");
+    const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
     const data = await pdfParse(req.file.buffer);
     const result = parseTextIntoChapters(data.text);
     const suggestedTitle = result.suggestedTitle !== "Untitled Book"

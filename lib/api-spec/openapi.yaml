@@ -304,6 +304,84 @@ paths:
               schema:
                 $ref: "#/components/schemas/ParseResult"
 
+  /export/{bookId}/pdf:
+    get:
+      operationId: exportBookPdf
+      tags: [export]
+      summary: Export book as a PDF file
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: PDF file download
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /export/{bookId}/docx:
+    get:
+      operationId: exportBookDocx
+      tags: [export]
+      summary: Export book as a Word document
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Word document download
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /export/{bookId}/epub:
+    get:
+      operationId: exportBookEpub
+      tags: [export]
+      summary: Export book as an EPUB file
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: EPUB file download
+          content:
+            application/epub+zip:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:

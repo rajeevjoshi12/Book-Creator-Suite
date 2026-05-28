@@ -288,3 +288,27 @@ export const ParseTextResponse = zod.object({
 })
 
 
+/**
+ * @summary Export book as a PDF file
+ */
+export const ExportBookPdfParams = zod.object({
+  "bookId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Export book as a Word document
+ */
+export const ExportBookDocxParams = zod.object({
+  "bookId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Export book as an EPUB file
+ */
+export const ExportBookEpubParams = zod.object({
+  "bookId": zod.coerce.number()
+})
+
+

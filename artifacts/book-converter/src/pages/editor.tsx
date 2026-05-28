@@ -17,6 +17,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ExportModal } from "@/components/export-modal";
+import { RichTextEditor } from "@/components/rich-text-editor";
+import { plainTextToHtml, htmlToPlainText } from "@/lib/html-utils";
 import { useToast } from "@/hooks/use-toast";
 import {
   DndContext,
@@ -631,15 +633,15 @@ export default function EditorPage() {
               </div>
 
               {/* Content editor */}
-              <div className="flex-1 overflow-y-auto px-8 py-6">
-                <textarea
-                  className="w-full h-full min-h-[500px] bg-transparent text-foreground font-serif text-base leading-8 resize-none border-none outline-none focus:ring-0"
-                  value={currentContent}
-                  onChange={(e) =>
-                    setChapterContent((prev) => ({ ...prev, [selectedChapterId!]: e.target.value }))
+              <div className="flex-1 overflow-hidden flex flex-col" data-testid="input-chapter-content">
+                <RichTextEditor
+                  key={selectedChapterId}
+                  content={plainTextToHtml(currentContent)}
+                  onChange={(html) =>
+                    setChapterContent((prev) => ({ ...prev, [selectedChapterId!]: htmlToPlainText(html) }))
                   }
                   placeholder="Start writing your chapter content here..."
-                  data-testid="input-chapter-content"
+                  className="flex-1 overflow-hidden"
                 />
               </div>
             </div>
