@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Text to Book Converter"
+version = "1.0.0"
+id = "artifacts/book-converter"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25959
+
+[services.development]
+run = "pnpm --filter @workspace/book-converter run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/book-converter", "run", "build" ]
+publicDir = "artifacts/book-converter/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25959"
+BASE_PATH = "/"

@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Text-to-Book Converter API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: books
+    description: Book operations
+  - name: chapters
+    description: Chapter operations
+  - name: export
+    description: Export operations
+  - name: upload
+    description: File upload and parsing operations
 paths:
   /healthz:
     get:
@@ -24,6 +32,278 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /books:
+    get:
+      operationId: listBooks
+      tags: [books]
+      summary: List all books
+      description: Returns all books sorted by creation date descending
+      responses:
+        "200":
+          description: List of books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+    post:
+      operationId: createBook
+      tags: [books]
+      summary: Create a new book
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookInput"
+      responses:
+        "201":
+          description: Book created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+
+  /books/stats:
+    get:
+      operationId: getLibraryStats
+      tags: [books]
+      summary: Library statistics
+      description: Returns aggregated stats for the book library
+      responses:
+        "200":
+          description: Library stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryStats"
+
+  /books/{bookId}:
+    get:
+      operationId: getBook
+      tags: [books]
+      summary: Get a book with its chapters
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Book with chapters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookDetail"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateBook
+      tags: [books]
+      summary: Update book metadata
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookUpdate"
+      responses:
+        "200":
+          description: Book updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+    delete:
+      operationId: deleteBook
+      tags: [books]
+      summary: Delete a book
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /books/{bookId}/chapters:
+    get:
+      operationId: listChapters
+      tags: [chapters]
+      summary: List chapters for a book
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Chapters list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chapter"
+    post:
+      operationId: createChapter
+      tags: [chapters]
+      summary: Add a chapter to a book
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChapterInput"
+      responses:
+        "201":
+          description: Chapter created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chapter"
+
+  /books/{bookId}/chapters/reorder:
+    patch:
+      operationId: reorderChapters
+      tags: [chapters]
+      summary: Reorder chapters within a book
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChapterReorder"
+      responses:
+        "200":
+          description: Chapters reordered
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chapter"
+
+  /books/{bookId}/chapters/{chapterId}:
+    patch:
+      operationId: updateChapter
+      tags: [chapters]
+      summary: Update a chapter
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChapterUpdate"
+      responses:
+        "200":
+          description: Chapter updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chapter"
+    delete:
+      operationId: deleteChapter
+      tags: [chapters]
+      summary: Delete a chapter
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /books/{bookId}/append-text:
+    post:
+      operationId: appendTextToBook
+      tags: [books]
+      summary: Append pasted text as a new chapter to an existing book
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppendTextInput"
+      responses:
+        "200":
+          description: Text appended, returns updated book detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookDetail"
+
+  /parse/text:
+    post:
+      operationId: parseText
+      tags: [upload]
+      summary: Parse pasted plain text into structured chapters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParseTextInput"
+      responses:
+        "200":
+          description: Parsed chapters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParseResult"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +314,204 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Book:
+      type: object
+      required: [id, title, author, createdAt, updatedAt, chapterCount, pageCount]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        author:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        coverColor:
+          type: ["string", "null"]
+        chapterCount:
+          type: integer
+        pageCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    BookDetail:
+      type: object
+      required: [id, title, author, createdAt, updatedAt, chapters]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        author:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        coverColor:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        chapters:
+          type: array
+          items:
+            $ref: "#/components/schemas/Chapter"
+
+    BookInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        author:
+          type: string
+        description:
+          type: string
+        coverColor:
+          type: string
+
+    BookUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        author:
+          type: string
+        description:
+          type: string
+        coverColor:
+          type: string
+
+    Chapter:
+      type: object
+      required: [id, bookId, title, type, content, sortOrder, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        bookId:
+          type: integer
+        title:
+          type: string
+        type:
+          type: string
+          enum: [chapter, subchapter, section]
+        content:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ChapterInput:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum: [chapter, subchapter, section]
+          default: chapter
+        content:
+          type: string
+        sortOrder:
+          type: integer
+
+    ChapterUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum: [chapter, subchapter, section]
+        content:
+          type: string
+        sortOrder:
+          type: integer
+
+    ChapterReorder:
+      type: object
+      required: [orderedIds]
+      properties:
+        orderedIds:
+          type: array
+          items:
+            type: integer
+
+    AppendTextInput:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+        chapterTitle:
+          type: string
+
+    ParseTextInput:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+
+    ParseResult:
+      type: object
+      required: [chapters, suggestedTitle]
+      properties:
+        suggestedTitle:
+          type: string
+        chapters:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParsedChapter"
+
+    ParsedChapter:
+      type: object
+      required: [title, content, type]
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+          enum: [chapter, subchapter, section]
+        content:
+          type: string
+
+    LibraryStats:
+      type: object
+      required: [totalBooks, totalChapters, totalPages, recentBooks]
+      properties:
+        totalBooks:
+          type: integer
+        totalChapters:
+          type: integer
+        totalPages:
+          type: integer
+        recentBooks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Book"
