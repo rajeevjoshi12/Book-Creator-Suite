@@ -791,7 +791,7 @@ export default function EditorPage() {
                     key={selectedChapterId}
                     content={plainTextToHtml(currentContent)}
                     onChange={(html) =>
-                      setChapterContent((prev) => ({ ...prev, [selectedChapterId!]: htmlToPlainText(html) }))
+                      setChapterContent((prev) => ({ ...prev, [selectedChapterId!]: html }))
                     }
                     placeholder="Start writing your chapter content here..."
                     className="flex-1 overflow-hidden"
@@ -883,7 +883,7 @@ export default function EditorPage() {
                             key={selectedPageId}
                             content={plainTextToHtml(currentPageContent)}
                             onChange={(html) =>
-                              setPageContent((prev) => ({ ...prev, [selectedPageId!]: htmlToPlainText(html) }))
+                              setPageContent((prev) => ({ ...prev, [selectedPageId!]: html }))
                             }
                             placeholder="Write page content here..."
                             className="flex-1 overflow-hidden"

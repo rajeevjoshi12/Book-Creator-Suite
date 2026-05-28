@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { db, booksTable, chaptersTable } from "@workspace/db";
+import { eq, desc, count } from "drizzle-orm";
+import { db, booksTable, chaptersTable, pagesTable } from "@workspace/db";
 import {
   CreateBookBody,
   UpdateBookBody,
@@ -14,9 +14,12 @@ import {
 
 const router: IRouter = Router();
 
-function estimatePageCount(chapters: { content: string }[]): number {
-  const totalChars = chapters.reduce((acc, c) => acc + c.content.length, 0);
-  return Math.max(1, Math.ceil(totalChars / 1800));
+async function getPageCount(bookId: number): Promise<number> {
+  const result = await db
+    .select({ count: count() })
+    .from(pagesTable)
+    .where(eq(pagesTable.bookId, bookId));
+  return result[0]?.count ?? 0;
 }
 
 async function buildBookWithCounts(bookId: number) {
@@ -27,16 +30,19 @@ async function buildBookWithCounts(bookId: number) {
     .then((r) => r[0]);
   if (!book) return null;
 
-  const chapters = await db
-    .select()
-    .from(chaptersTable)
-    .where(eq(chaptersTable.bookId, bookId))
-    .orderBy(chaptersTable.sortOrder);
+  const [chapters, pageCount] = await Promise.all([
+    db
+      .select()
+      .from(chaptersTable)
+      .where(eq(chaptersTable.bookId, bookId))
+      .orderBy(chaptersTable.sortOrder),
+    getPageCount(bookId),
+  ]);
 
   return {
     ...book,
     chapterCount: chapters.length,
-    pageCount: estimatePageCount(chapters),
+    pageCount,
     chapters,
   };
 }
@@ -49,14 +55,14 @@ router.get("/books", async (_req, res): Promise<void> => {
 
   const booksWithCounts = await Promise.all(
     books.map(async (book) => {
-      const chapters = await db
-        .select()
-        .from(chaptersTable)
-        .where(eq(chaptersTable.bookId, book.id));
+      const [chapters, pageCount] = await Promise.all([
+        db.select().from(chaptersTable).where(eq(chaptersTable.bookId, book.id)),
+        getPageCount(book.id),
+      ]);
       return {
         ...book,
         chapterCount: chapters.length,
-        pageCount: estimatePageCount(chapters),
+        pageCount,
       };
     }),
   );
@@ -65,17 +71,14 @@ router.get("/books", async (_req, res): Promise<void> => {
 });
 
 router.get("/books/stats", async (_req, res): Promise<void> => {
-  const totalBooksResult = await db
-    .select({ count: count() })
-    .from(booksTable);
-  const totalChaptersResult = await db
-    .select({ count: count() })
-    .from(chaptersTable);
+  const [totalBooksResult, totalChaptersResult, totalPagesResult] = await Promise.all([
+    db.select({ count: count() }).from(booksTable),
+    db.select({ count: count() }).from(chaptersTable),
+    db.select({ count: count() }).from(pagesTable),
+  ]);
   const totalBooks = totalBooksResult[0]?.count ?? 0;
   const totalChapters = totalChaptersResult[0]?.count ?? 0;
-
-  const allChapters = await db.select().from(chaptersTable);
-  const totalPages = estimatePageCount(allChapters);
+  const totalPages = totalPagesResult[0]?.count ?? 0;
 
   const recentBooksRaw = await db
     .select()
@@ -85,14 +88,14 @@ router.get("/books/stats", async (_req, res): Promise<void> => {
 
   const recentBooks = await Promise.all(
     recentBooksRaw.map(async (book) => {
-      const chapters = await db
-        .select()
-        .from(chaptersTable)
-        .where(eq(chaptersTable.bookId, book.id));
+      const [chapters, pageCount] = await Promise.all([
+        db.select().from(chaptersTable).where(eq(chaptersTable.bookId, book.id)),
+        getPageCount(book.id),
+      ]);
       return {
         ...book,
         chapterCount: chapters.length,
-        pageCount: estimatePageCount(chapters),
+        pageCount,
       };
     }),
   );
@@ -156,15 +159,15 @@ router.patch("/books/:bookId", async (req, res): Promise<void> => {
     return;
   }
 
-  const chapters = await db
-    .select()
-    .from(chaptersTable)
-    .where(eq(chaptersTable.bookId, updated.id));
+  const [chapters, pageCount] = await Promise.all([
+    db.select().from(chaptersTable).where(eq(chaptersTable.bookId, updated.id)),
+    getPageCount(updated.id),
+  ]);
 
   res.json({
     ...updated,
     chapterCount: chapters.length,
-    pageCount: estimatePageCount(chapters),
+    pageCount,
   });
 });
 
@@ -222,12 +225,20 @@ router.post("/books/:bookId/append-text", async (req, res): Promise<void> => {
   const nextSortOrder = (existingChapters[0]?.sortOrder ?? -1) + 1;
   const chapterTitle = parsed.data.chapterTitle ?? `Appended Content`;
 
-  await db.insert(chaptersTable).values({
+  const [chapter] = await db.insert(chaptersTable).values({
     bookId: params.data.bookId,
     title: chapterTitle,
     type: "chapter",
     content: parsed.data.text,
     sortOrder: nextSortOrder,
+  }).returning();
+
+  await db.insert(pagesTable).values({
+    bookId: params.data.bookId,
+    chapterId: chapter.id,
+    title: chapterTitle,
+    content: parsed.data.text,
+    sortOrder: 0,
   });
 
   await db
