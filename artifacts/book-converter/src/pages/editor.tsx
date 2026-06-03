@@ -132,9 +132,11 @@ interface SortablePageProps {
   isActive: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onFormat: () => void;
+  isFormatting?: boolean;
 }
 
-function SortablePage({ page, pageNumber, isActive, onSelect, onDelete }: SortablePageProps) {
+function SortablePage({ page, pageNumber, isActive, onSelect, onDelete, onFormat, isFormatting }: SortablePageProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: page.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
@@ -159,6 +161,15 @@ function SortablePage({ page, pageNumber, isActive, onSelect, onDelete }: Sortab
         {pageNumber}.
       </span>
       <p className="text-xs flex-1 truncate leading-snug ml-1">{page.title || `Page ${pageNumber}`}</p>
+      <button
+        className="opacity-0 group-hover:opacity-60 hover:opacity-100 shrink-0 p-0.5 hover:text-primary transition-colors"
+        title="Format page (Times New Roman, bold headings, numbered lists)"
+        onClick={(e) => { e.stopPropagation(); onFormat(); }}
+        data-testid={`button-format-page-${page.id}`}
+        disabled={isFormatting}
+      >
+        {isFormatting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+      </button>
       <button
         className="opacity-0 group-hover:opacity-60 hover:opacity-100 shrink-0 p-0.5 hover:text-destructive transition-colors"
         onClick={(e) => { e.stopPropagation(); onDelete(); }}
@@ -196,7 +207,7 @@ export default function EditorPage() {
   const [appendChapterTitle, setAppendChapterTitle] = useState("");
   const appendFileRef = useRef<HTMLInputElement>(null);
   const [isAppendUploading, setIsAppendUploading] = useState(false);
-  const [isFormatting, setIsFormatting] = useState(false);
+  const [formattingPageId, setFormattingPageId] = useState<number | null>(null);
   const [isAutoNumbering, setIsAutoNumbering] = useState(false);
 
   const sensors = useSensors(
@@ -316,28 +327,32 @@ export default function EditorPage() {
     toast({ title: "Index refreshed" });
   };
 
-  const handleFormatPage = () => {
-    if (!selectedPageId || !selectedChapterId) return;
-    setIsFormatting(true);
-    const rawHtml = currentPageContent || "";
+  const handleFormatPageById = (pageId: number) => {
+    if (!selectedChapterId || !pages) return;
+    const page = pages.find((p) => p.id === pageId);
+    if (!page) return;
+    setFormattingPageId(pageId);
+    const rawHtml = (pageId === selectedPageId ? currentPageContent : page.content) || "";
     const formatted = formatPageContent(plainTextToHtml(rawHtml));
-    setPageContent((prev) => ({ ...prev, [selectedPageId]: formatted }));
+    if (pageId === selectedPageId) {
+      setPageContent((prev) => ({ ...prev, [pageId]: formatted }));
+    }
     updatePage.mutate(
       {
         bookId,
         chapterId: selectedChapterId,
-        pageId: selectedPageId,
-        data: { title: currentPageTitle, content: formatted },
+        pageId,
+        data: { title: page.title ?? "", content: formatted },
       },
       {
         onSuccess: () => {
           invalidatePages();
           toast({ title: "Page formatted" });
-          setIsFormatting(false);
+          setFormattingPageId(null);
         },
         onError: () => {
           toast({ title: "Format failed", variant: "destructive" });
-          setIsFormatting(false);
+          setFormattingPageId(null);
         },
       },
     );
@@ -939,6 +954,8 @@ export default function EditorPage() {
                                 isActive={p.id === selectedPageId}
                                 onSelect={() => setSelectedPageId(p.id)}
                                 onDelete={() => handleDeletePage(p.id)}
+                                onFormat={() => handleFormatPageById(p.id)}
+                                isFormatting={formattingPageId === p.id}
                               />
                             ))}
                           </SortableContext>
@@ -977,12 +994,12 @@ export default function EditorPage() {
                             variant="outline"
                             size="sm"
                             className="gap-1.5 h-7 text-xs shrink-0"
-                            onClick={handleFormatPage}
-                            disabled={isFormatting || !selectedPage}
+                            onClick={() => selectedPageId && handleFormatPageById(selectedPageId)}
+                            disabled={formattingPageId === selectedPageId || !selectedPage}
                             title="Format page: apply Times New Roman 12pt, bold headings, numbered lists"
                             data-testid="button-format-page"
                           >
-                            {isFormatting ? (
+                            {formattingPageId === selectedPageId ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
                             ) : (
                               <Wand2 className="w-3 h-3" />
