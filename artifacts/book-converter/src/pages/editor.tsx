@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ExportModal } from "@/components/export-modal";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { plainTextToHtml, htmlToPlainText } from "@/lib/html-utils";
+import { plainTextToHtml, htmlToPlainText, formatPageContent } from "@/lib/html-utils";
 import { useToast } from "@/hooks/use-toast";
 import {
   DndContext,
@@ -56,6 +56,9 @@ import {
   ChevronDown,
   FileText,
   LayoutList,
+  RefreshCw,
+  Hash,
+  Wand2,
 } from "lucide-react";
 
 const BASE_URL = import.meta.env.BASE_URL ?? "/";
@@ -125,12 +128,13 @@ function SortableChapter({ chapter, isActive, onSelect, onDelete }: SortableChap
 
 interface SortablePageProps {
   page: { id: number; title: string; content: string; sortOrder: number };
+  pageNumber: number;
   isActive: boolean;
   onSelect: () => void;
   onDelete: () => void;
 }
 
-function SortablePage({ page, isActive, onSelect, onDelete }: SortablePageProps) {
+function SortablePage({ page, pageNumber, isActive, onSelect, onDelete }: SortablePageProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: page.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
@@ -151,8 +155,10 @@ function SortablePage({ page, isActive, onSelect, onDelete }: SortablePageProps)
       >
         <GripVertical className="w-3 h-3" />
       </button>
-      <FileText className="w-3 h-3 shrink-0 opacity-60" />
-      <p className="text-xs flex-1 truncate leading-snug ml-1">{page.title || "Untitled page"}</p>
+      <span className={`text-[10px] font-mono shrink-0 w-5 text-right ${isActive ? "opacity-70" : "text-muted-foreground"}`}>
+        {pageNumber}.
+      </span>
+      <p className="text-xs flex-1 truncate leading-snug ml-1">{page.title || `Page ${pageNumber}`}</p>
       <button
         className="opacity-0 group-hover:opacity-60 hover:opacity-100 shrink-0 p-0.5 hover:text-destructive transition-colors"
         onClick={(e) => { e.stopPropagation(); onDelete(); }}
@@ -190,6 +196,8 @@ export default function EditorPage() {
   const [appendChapterTitle, setAppendChapterTitle] = useState("");
   const appendFileRef = useRef<HTMLInputElement>(null);
   const [isAppendUploading, setIsAppendUploading] = useState(false);
+  const [isFormatting, setIsFormatting] = useState(false);
+  const [isAutoNumbering, setIsAutoNumbering] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -216,7 +224,7 @@ export default function EditorPage() {
   const deletePage = useDeletePage();
   const reorderPages = useReorderPages();
 
-  const { data: pages } = useListPages(
+  const { data: pages, isFetching: isFetchingPages } = useListPages(
     bookId,
     selectedChapterId ?? 0,
     { query: { enabled: !!selectedChapterId, queryKey: getListPagesQueryKey(bookId, selectedChapterId ?? 0) } },
@@ -281,6 +289,57 @@ export default function EditorPage() {
     reorderPages.mutate(
       { bookId, chapterId: selectedChapterId, data: { orderedIds: newOrder.map((p) => p.id) } },
       { onSuccess: invalidatePages },
+    );
+  };
+
+  const handleAutoNumberPages = () => {
+    if (!pages || pages.length === 0 || !selectedChapterId) return;
+    setIsAutoNumbering(true);
+    reorderPages.mutate(
+      { bookId, chapterId: selectedChapterId, data: { orderedIds: pages.map((p) => p.id) } },
+      {
+        onSuccess: () => {
+          invalidatePages();
+          toast({ title: "Pages renumbered" });
+          setIsAutoNumbering(false);
+        },
+        onError: () => {
+          toast({ title: "Renumber failed", variant: "destructive" });
+          setIsAutoNumbering(false);
+        },
+      },
+    );
+  };
+
+  const handleRefreshIndex = () => {
+    invalidatePages();
+    toast({ title: "Index refreshed" });
+  };
+
+  const handleFormatPage = () => {
+    if (!selectedPageId || !selectedChapterId) return;
+    setIsFormatting(true);
+    const rawHtml = currentPageContent || "";
+    const formatted = formatPageContent(plainTextToHtml(rawHtml));
+    setPageContent((prev) => ({ ...prev, [selectedPageId]: formatted }));
+    updatePage.mutate(
+      {
+        bookId,
+        chapterId: selectedChapterId,
+        pageId: selectedPageId,
+        data: { title: currentPageTitle, content: formatted },
+      },
+      {
+        onSuccess: () => {
+          invalidatePages();
+          toast({ title: "Page formatted" });
+          setIsFormatting(false);
+        },
+        onError: () => {
+          toast({ title: "Format failed", variant: "destructive" });
+          setIsFormatting(false);
+        },
+      },
     );
   };
 
@@ -431,6 +490,9 @@ export default function EditorPage() {
       </div>
     );
   }
+
+  const selectedPageIndex = pages ? pages.findIndex((p) => p.id === selectedPageId) : -1;
+  const selectedPageNum = selectedPageIndex >= 0 ? selectedPageIndex + 1 : null;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
@@ -805,16 +867,44 @@ export default function EditorPage() {
                   <div className="w-52 border-r border-border flex flex-col shrink-0 overflow-hidden">
                     <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
                       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pages</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={handleAddPage}
-                        data-testid="button-add-page"
-                        title="Add page"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={handleRefreshIndex}
+                          title="Refresh index"
+                          disabled={isFetchingPages}
+                          data-testid="button-refresh-index"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${isFetchingPages ? "animate-spin" : ""}`} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={handleAutoNumberPages}
+                          title="Auto-number pages"
+                          disabled={!pages || pages.length === 0 || isAutoNumbering}
+                          data-testid="button-autonumber-pages"
+                        >
+                          {isAutoNumbering ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Hash className="w-3 h-3" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={handleAddPage}
+                          data-testid="button-add-page"
+                          title="Add page"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2">
                       {(!pages || pages.length === 0) && (
@@ -841,10 +931,11 @@ export default function EditorPage() {
                             items={pages.map((p) => p.id)}
                             strategy={verticalListSortingStrategy}
                           >
-                            {pages.map((p) => (
+                            {pages.map((p, idx) => (
                               <SortablePage
                                 key={p.id}
                                 page={p}
+                                pageNumber={idx + 1}
                                 isActive={p.id === selectedPageId}
                                 onSelect={() => setSelectedPageId(p.id)}
                                 onDelete={() => handleDeletePage(p.id)}
@@ -869,14 +960,35 @@ export default function EditorPage() {
                       </div>
                     ) : (
                       <>
-                        <div className="px-4 py-2 border-b border-border shrink-0">
+                        <div className="flex items-center gap-2 px-4 py-2 border-b border-border shrink-0">
+                          {selectedPageNum !== null && (
+                            <span className="text-xs font-mono text-muted-foreground shrink-0 tabular-nums">
+                              p.{selectedPageNum}
+                            </span>
+                          )}
                           <input
-                            className="w-full font-medium text-sm bg-transparent border-none outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground"
+                            className="flex-1 font-medium text-sm bg-transparent border-none outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground"
                             value={currentPageTitle}
                             onChange={(e) => setPageTitle((prev) => ({ ...prev, [selectedPageId!]: e.target.value }))}
                             placeholder="Page title"
                             data-testid="input-page-title"
                           />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 h-7 text-xs shrink-0"
+                            onClick={handleFormatPage}
+                            disabled={isFormatting || !selectedPage}
+                            title="Format page: apply Times New Roman 12pt, bold headings, numbered lists"
+                            data-testid="button-format-page"
+                          >
+                            {isFormatting ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Wand2 className="w-3 h-3" />
+                            )}
+                            Format Page
+                          </Button>
                         </div>
                         <div className="flex-1 overflow-hidden flex flex-col" data-testid="input-page-content">
                           <RichTextEditor
